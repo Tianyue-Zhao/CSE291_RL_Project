@@ -26,7 +26,7 @@ snapshot_location = 'snapshots/'
 metric_location = 'metrics/'
 
 # Training parameters
-steps_to_train = 20000
+steps_to_train = 200000
 initial_exploration_steps = 10000 # Steps to randomly sample actions
 lr = 0.0003
 alpha = 0.2
@@ -103,6 +103,7 @@ for i in range(initial_exploration_steps, steps_to_train):
         sw.add_scalar(key, value, i)
 
     next_state, reward, done, _ = env.step(action) # Step
+    sw.add_scalar("Reward", reward, i)
     episode_steps += 1
     episode_reward += reward
     mask = 1 if episode_steps == max_env_steps else float(not done)
@@ -113,6 +114,8 @@ for i in range(initial_exploration_steps, steps_to_train):
         obs = env.reset()
         num_episodes += 1
         print("Episode {} finished with reward {}".format(num_episodes, episode_reward))
+        sw.add_scalar("Episode Reward", episode_reward, i)
+        episode_reward = 0
     
     if(i % snapshot_every == 0):
         agent.save_checkpoint(str(snapshot_dir / "model_{}.data".format(i)))
