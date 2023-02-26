@@ -26,14 +26,15 @@ snapshot_location = 'snapshots/'
 metric_location = 'metrics/'
 
 # Training parameters
-steps_to_train = 200000
+steps_to_train = 100000
 initial_exploration_steps = 10000 # Steps to randomly sample actions
-lr = 0.0003
+lr = 0.001
 alpha = 0.2
 batch_size = 256
 seed = 21283489
 replay_size = 2000000
 snapshot_every = 20000
+load_from = "model_100000.data"
 
 # Create paths
 directory = Path.cwd()
@@ -56,7 +57,7 @@ env = RecordEpisode(
 obs = env.reset()
 args = {
     'cuda': True,
-    'automatic_entropy_tuning': False, # Consider changing this
+    'automatic_entropy_tuning': True,
     'alpha': alpha,
     'lr': lr,
     'gamma': 0.99,
@@ -74,12 +75,21 @@ args = Arg_Attribute(args)
 
 agent = SAC(env.observation_space.shape[0], env.action_space, args)
 memory = ReplayMemory(replay_size, seed)
+total_steps = 0
+
+if(not load_from == ''):
+    agent.load_checkpoint(str(snapshot_dir / load_from))
+    print("Agent loaded checkpoint {}".format(load_from))
+    total_steps = int(load_from.split('_')[-1].split('.')[0])
 
 # Fill replay buffer with random actions
 num_episodes = 0
 episode_steps = 0
 for i in range(initial_exploration_steps):
-    action = env.action_space.sample()
+    if(load_from == ''):
+        action = env.action_space.sample()
+    else:
+        action = agent.select_action(obs)
     next_obs, reward, done, _ = env.step(action)
     episode_steps += 1
     mask = 1 if episode_steps == max_env_steps else float(not done)
@@ -89,7 +99,7 @@ for i in range(initial_exploration_steps):
         num_episodes += 1
         episode_steps = 0
         obs = env.reset()
-        print("Collected random episode {}".format(num_episodes))
+        print("Collected initial episode {}".format(num_episodes))
 
 # Run the main training loop
 episode_steps = 0
@@ -97,13 +107,14 @@ episode_reward = 0
 num_episodes = 0
 obs = env.reset()
 for i in range(initial_exploration_steps, steps_to_train):
+    total_steps += 1
     action = agent.select_action(obs)
-    metrics = agent.update_parameters(memory, batch_size, i) 
+    metrics = agent.update_parameters(memory, batch_size, total_steps) 
     for (key, value) in metrics.items():
-        sw.add_scalar(key, value, i)
+        sw.add_scalar(key, value, total_steps)
 
     next_state, reward, done, _ = env.step(action) # Step
-    sw.add_scalar("Reward", reward, i)
+    sw.add_scalar("Reward", reward, total_steps)
     episode_steps += 1
     episode_reward += reward
     mask = 1 if episode_steps == max_env_steps else float(not done)
@@ -117,7 +128,7 @@ for i in range(initial_exploration_steps, steps_to_train):
         sw.add_scalar("Episode Reward", episode_reward, i)
         episode_reward = 0
     
-    if(i % snapshot_every == 0):
-        agent.save_checkpoint(str(snapshot_dir / "model_{}.data".format(i)))
-        print("Saved model at step {}".format(i))
+    if(total_steps % snapshot_every == 0):
+        agent.save_checkpoint(str(snapshot_dir / "model_{}.data".format(total_steps)))
+        print("Saved model at step {}".format(total_steps))
 agent.save_checkpoint(str(snapshot_dir / "model_final.data"))
