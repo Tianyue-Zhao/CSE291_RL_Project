@@ -14,7 +14,8 @@ from torch.utils.tensorboard import SummaryWriter
 # Uses SAC from existing repository on Github
 
 # Environment Control
-env_id = "LiftCube-v1"
+# env_id = "LiftCube-v1"
+env_id = "StackCube-v1"
 obs_mode = "state"
 control_mode = "pd_ee_delta_pos"
 reward_mode = "dense"
@@ -26,15 +27,15 @@ snapshot_location = 'snapshots/'
 metric_location = 'metrics/'
 
 # Training parameters
-steps_to_train = 100000
+steps_to_train = 500000
 initial_exploration_steps = 10000 # Steps to randomly sample actions
-lr = 0.001
+lr = 0.0003
 alpha = 0.2
 batch_size = 256
 seed = 21283489
 replay_size = 2000000
 snapshot_every = 20000
-load_from = "model_100000.data"
+load_from = ""
 
 # Create paths
 directory = Path.cwd()
@@ -60,11 +61,11 @@ args = {
     'automatic_entropy_tuning': True,
     'alpha': alpha,
     'lr': lr,
-    'gamma': 0.99,
-    'tau': 0.005,
+    'gamma': 0.9,
+    'tau': 0.008,
     'policy_type': 'Gaussian',
     'target_update_interval': 1, # Don't understand why this is 1 by default
-    'hidden_size': 128 # Chose a relative small hidden size for small environment
+    'hidden_size': 256 # Chose a relative small hidden size for small environment
 }
 # The SAC algorithm file expects the arguments as attributes
 class Arg_Attribute:
@@ -104,7 +105,7 @@ for i in range(initial_exploration_steps):
 # Run the main training loop
 episode_steps = 0
 episode_reward = 0
-num_episodes = 0
+# num_episodes = 0
 obs = env.reset()
 for i in range(initial_exploration_steps, steps_to_train):
     total_steps += 1
