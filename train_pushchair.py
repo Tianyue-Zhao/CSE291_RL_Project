@@ -14,9 +14,10 @@ from torch.utils.tensorboard import SummaryWriter
 # Uses SAC from existing repository on Github
 
 # Environment Control
-env_id = "LiftCube-v1"
+env_id = "PushChair-v1"
+# env_id = "PushChair-v2"
 obs_mode = "state"
-control_mode = "pd_ee_delta_pos"
+control_mode = "base_pd_joint_vel_arm_pd_joint_vel"
 reward_mode = "dense"
 max_env_steps = 200
 

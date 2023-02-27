@@ -14,7 +14,7 @@ from torch.utils.tensorboard import SummaryWriter
 # Uses SAC from existing repository on Github
 
 # Environment Control
-env_id = "LiftCube-v1"
+env_id = "PegInsertionSide-v1"
 obs_mode = "state"
 control_mode = "pd_ee_delta_pos"
 reward_mode = "dense"
