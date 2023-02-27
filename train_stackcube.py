@@ -26,15 +26,15 @@ snapshot_location = 'snapshots/'
 metric_location = 'metrics/'
 
 # Training parameters
-steps_to_train = 500000
+steps_to_train = 1000001
 initial_exploration_steps = 10000 # Steps to randomly sample actions
 lr = 0.0003
 alpha = 0.2
 batch_size = 256
-seed = 231981
-replay_size = 2000000
+seed = 21283489
+replay_size = 3000000
 snapshot_every = 20000
-load_from = ""
+load_from = "model_500000.data"
 
 # Create paths
 directory = Path.cwd()
@@ -60,8 +60,8 @@ args = {
     'automatic_entropy_tuning': True,
     'alpha': alpha,
     'lr': lr,
-    'gamma': 0.95,
-    'tau': 0.012,
+    'gamma': 0.9,
+    'tau': 0.008,
     'policy_type': 'Gaussian',
     'target_update_interval': 1, # Don't understand why this is 1 by default
     'hidden_size': 256 # Chose a relative small hidden size for small environment
@@ -83,7 +83,7 @@ if(not load_from == ''):
     total_steps = int(load_from.split('_')[-1].split('.')[0])
 
 # Fill replay buffer with random actions
-num_episodes = 0
+num_episodes = 1
 episode_steps = 0
 for i in range(initial_exploration_steps):
     if(load_from == ''):

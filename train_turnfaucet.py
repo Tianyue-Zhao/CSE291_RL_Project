@@ -1,5 +1,6 @@
 import gym
 import numpy as np
+import os
 import mani_skill2.envs
 import matplotlib.pyplot as plt
 from mani_skill2.utils.wrappers import RecordEpisode
@@ -13,7 +14,8 @@ from torch.utils.tensorboard import SummaryWriter
 # Uses SAC from existing repository on Github
 
 # Environment Control
-env_id = "LiftCube-v1"
+env_id = "TurnFaucet-v1"
+# env_id = "TurnFaucet-v2"
 obs_mode = "state"
 control_mode = "pd_ee_delta_pos"
 reward_mode = "dense"
@@ -25,7 +27,7 @@ snapshot_location = 'snapshots/'
 metric_location = 'metrics/'
 
 # Training parameters
-steps_to_train = 50000
+steps_to_train = 500000
 initial_exploration_steps = 10000 # Steps to randomly sample actions
 lr = 0.0003
 alpha = 0.2
