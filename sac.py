@@ -50,6 +50,15 @@ class SAC(object):
             _, _, action = self.policy.sample(state)
         return action.detach().cpu().numpy()[0]
 
+    def query_q(self, state, action, alpha):
+        state = torch.FloatTensor(state).to(self.device).unsqueeze(0)
+        action = torch.FloatTensor(action).to(self.device).unsqueeze(0)
+        _, log_pi, _ = self.policy.sample(state)
+        q1, q2 = self.critic(state, action)
+        q1 -= alpha * log_pi
+        q2 -= alpha * log_pi
+        return q1.detach().cpu().numpy()[0], q2.detach().cpu().numpy()[0]
+
     def update_parameters(self, memory, batch_size, updates):
         # Sample a batch from memory
         state_batch, action_batch, reward_batch, next_state_batch, mask_batch = memory.sample(batch_size=batch_size)
@@ -123,9 +132,9 @@ class SAC(object):
 
     # Load model parameters
     def load_checkpoint(self, ckpt_path, evaluate=False):
-        print('Loading models from {}'.format(ckpt_path))
+        print('Loading models from {}'.format(ckpt_path)) 
         if ckpt_path is not None:
-            checkpoint = torch.load(ckpt_path)
+            checkpoint = torch.load(ckpt_path, map_location=self.device)
             self.policy.load_state_dict(checkpoint['policy_state_dict'])
             self.critic.load_state_dict(checkpoint['critic_state_dict'])
             self.critic_target.load_state_dict(checkpoint['critic_target_state_dict'])

@@ -1,6 +1,5 @@
 import gym
 import numpy as np
-import os
 import mani_skill2.envs
 import matplotlib.pyplot as plt
 from mani_skill2.utils.wrappers import RecordEpisode
