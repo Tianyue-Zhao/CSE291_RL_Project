@@ -1,0 +1,24 @@
+name: drqv2
+channels:
+  - defaults
+dependencies:
+  - python=3.9
+  - pip:
+    - termcolor
+    - dm-control==1.0.3
+    - tb-nightly
+    - imageio
+    - imageio-ffmpeg
+    - hydra-core
+    - hydra-submitit-launcher
+    - pandas
+    - ipdb
+    - yapf
+    - mujoco_py==2.1.2.14
+    - sklearn
+    - matplotlib
+    - opencv-python
+    - absl-py
+    - pyparsing
+    - jupyterlab
+    - scikit-image
