@@ -1,6 +1,5 @@
 import gym
 import numpy as np
-import os
 import mani_skill2.envs
 import matplotlib.pyplot as plt
 from mani_skill2.utils.wrappers import RecordEpisode
@@ -26,7 +25,7 @@ snapshot_location = 'snapshots/'
 metric_location = 'metrics/'
 
 # Training parameters
-steps_to_train = 500000
+steps_to_train = 50000
 initial_exploration_steps = 10000 # Steps to randomly sample actions
 lr = 0.0003
 alpha = 0.2
