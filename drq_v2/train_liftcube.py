@@ -3,6 +3,8 @@ import numpy as np
 import mani_skill2.envs
 import torch
 import pickle
+import datetime
+import json
 from mani_skill2.utils.wrappers import RecordEpisode
 from dm_env import specs
 from dm_env import StepType
@@ -27,17 +29,25 @@ reward_mode = "dense"
 max_env_steps = 200
 
 num_train_frames = 300000
+num_train_frames = 10000
 replay_buffer_frames = 500000
-snapshot_every = 20000
+snapshot_every = 5000
+num_expl_steps = 1000
 load_from = ""
 
+training_location = 'training/'
 video_location = 'videos/'
 replay_location = 'replays/'
 snapshot_location = 'snapshots/'
 metric_location = 'metrics/'
 
+# Get a string of the current time
+current_time = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
 
 directory = Path.cwd()
+directory = directory / training_location
+directory = directory / current_time
+directory.mkdir(parents=True, exist_ok=True)
 video_dir = directory / video_location
 replay_dir = directory / replay_location
 snapshot_dir = directory / snapshot_location
@@ -46,6 +56,24 @@ video_dir.mkdir(exist_ok=True)
 snapshot_dir.mkdir(exist_ok=True)
 metric_dir.mkdir(exist_ok=True)
 sw = SummaryWriter(metric_dir)
+reward_record = directory / 'reward_history.pickle'
+
+# Save a json file about the training information
+training_info = {
+    'env_id': env_id,
+    'obs_mode': obs_mode,
+    'control_mode': control_mode,
+    'reward_mode': reward_mode,
+    'max_env_steps': max_env_steps,
+    'num_train_frames': num_train_frames,
+    'replay_buffer_frames': replay_buffer_frames,
+    'snapshot_every': snapshot_every,
+    'num_expl_steps': num_expl_steps,
+    'load_from': load_from
+}
+info_file = str(directory / 'training_info.json')
+with open(info_file, 'w') as outfile:
+    json.dump(training_info, outfile)
 
 env = gym.make(env_id, obs_mode=obs_mode, reward_mode=reward_mode, control_mode=control_mode)
 env = RecordEpisode(
@@ -72,7 +100,6 @@ action_shape = (4,)
 feature_dim = 50
 hidden_dim = 1024
 critic_target_tau = 0.01
-num_expl_steps = 10000
 update_every_steps = 2
 stddev_clip = 0.3
 use_tb = True
@@ -91,6 +118,11 @@ replay_loader = make_replay_loader(
 agent = DrQV2Agent(obs_shape, action_shape, 'cuda', learning_rate,
     feature_dim, hidden_dim, critic_target_tau, num_expl_steps,
     update_every_steps, stddev_schedule, stddev_clip, use_tb)
+prev_steps = 0  # An indication of how many steps the agent has already been trained for
+
+if(not load_from == ''):
+    agent.load(str(snapshot_dir / load_from))
+    prev_steps = int(load_from.split('_')[-1].split('.')[0])
 
 length_history = []
 ep_length = 0
@@ -129,6 +161,10 @@ for i in range(num_train_frames):
         ep_num += 1
         replay_storage.add(step)
 
+        # Write the reward history to a file
+        with open(reward_record, 'wb') as f:
+            pickle.dump(reward_history, f)
+
         print("Episode " + str(ep_num))
 
     with torch.no_grad(), eval_mode(agent):
@@ -155,8 +191,6 @@ for i in range(num_train_frames):
         action = action
     )
     replay_storage.add(step)
-
-#     if(total_steps % snapshot_every == 0):
-#         agent.save_checkpoint(str(snapshot_dir / "model_{}.data".format(total_steps)))
-#         print("Saved model at step {}".format(total_steps))
-# agent.save_checkpoint(str(snapshot_dir / "model_final.data"))
+    if(i % snapshot_every == 0):
+        agent.save(str(snapshot_dir / ('snapshot_' + str(i + prev_steps) + '.data')))
+agent.save(str(snapshot_dir / ('snapshot_' + str(i) + '.data')))

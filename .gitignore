@@ -2,3 +2,5 @@
 **/metrics/
 **/__pycache__/
 **/snapshots/
+**/replays/
+**/training/
