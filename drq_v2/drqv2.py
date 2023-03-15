@@ -161,6 +161,27 @@ class DrQV2Agent:
         self.actor.train(training)
         self.critic.train(training)
 
+    def save(self, filename):
+        save_dict = {}
+        save_dict['encoder'] = self.encoder.state_dict()
+        save_dict['actor'] = self.actor.state_dict()
+        save_dict['critic'] = self.critic.state_dict()
+        save_dict['critic_target'] = self.critic_target.state_dict()
+        save_dict['encoder_opt'] = self.encoder_opt.state_dict()
+        save_dict['actor_opt'] = self.actor_opt.state_dict()
+        save_dict['critic_opt'] = self.critic_opt.state_dict()
+        torch.save(save_dict, filename)
+    
+    def load(self, filename):
+        load_dict = torch.load(filename)
+        self.encoder.load_state_dict(load_dict['encoder'])
+        self.actor.load_state_dict(load_dict['actor'])
+        self.critic.load_state_dict(load_dict['critic'])
+        self.critic_target.load_state_dict(load_dict['critic_target'])
+        self.encoder_opt.load_state_dict(load_dict['encoder_opt'])
+        self.actor_opt.load_state_dict(load_dict['actor_opt'])
+        self.critic_opt.load_state_dict(load_dict['critic_opt'])
+
     def act(self, obs, step, eval_mode):
         obs = torch.as_tensor(obs, device=self.device)
         obs = self.encoder(obs.unsqueeze(0))
