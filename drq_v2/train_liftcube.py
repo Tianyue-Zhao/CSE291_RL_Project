@@ -5,6 +5,8 @@ import torch
 import pickle
 import datetime
 import json
+import random
+import faulthandler
 from mani_skill2.utils.wrappers import RecordEpisode
 from dm_env import specs
 from dm_env import StepType
@@ -22,17 +24,25 @@ def log_metrics(metrics, steps):
     with open(str(metric_dir) + '/metric_' + str(steps) + '.dict', 'wb') as output_file:
         pickle.dump(metrics, output_file)
 
+def set_seed_everywhere(seed):
+    torch.manual_seed(seed)
+    if(torch.cuda.is_available()):
+        torch.cuda.manual_seed_all(seed)
+    np.random.seed(seed)
+    random.seed(seed)
+
 env_id = "LiftCube-v1"
 obs_mode = "rgbd"
 control_mode = "pd_ee_delta_pos"
 reward_mode = "dense"
 max_env_steps = 200
 
-num_train_frames = 300000
+num_train_frames = 1000000
 num_train_frames = 10000
 replay_buffer_frames = 500000
-snapshot_every = 5000
-num_expl_steps = 1000
+snapshot_every = num_train_frames // 20
+num_expl_steps = 2000
+training_seed = 321089
 load_from = ""
 
 training_location = 'training/'
@@ -43,6 +53,8 @@ metric_location = 'metrics/'
 
 # Get a string of the current time
 current_time = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+set_seed_everywhere(training_seed)
+faulthandler.enable()
 
 directory = Path.cwd()
 directory = directory / training_location
@@ -69,7 +81,8 @@ training_info = {
     'replay_buffer_frames': replay_buffer_frames,
     'snapshot_every': snapshot_every,
     'num_expl_steps': num_expl_steps,
-    'load_from': load_from
+    'load_from': load_from,
+    'training_seed': training_seed
 }
 info_file = str(directory / 'training_info.json')
 with open(info_file, 'w') as outfile:
