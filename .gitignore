@@ -1,4 +1,6 @@
-videos/
-metrics/
-__pycache__/
-snapshots/
+**/videos/
+**/metrics/
+**/__pycache__/
+**/snapshots/
+**/replays/
+**/training/
