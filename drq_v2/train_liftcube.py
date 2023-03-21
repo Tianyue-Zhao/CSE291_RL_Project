@@ -38,11 +38,10 @@ reward_mode = "dense"
 max_env_steps = 200
 
 num_train_frames = 1000000
-num_train_frames = 10000
 replay_buffer_frames = 500000
 snapshot_every = num_train_frames // 20
-num_expl_steps = 2000
-training_seed = 321089
+num_expl_steps = 5000
+training_seed = 32191
 load_from = ""
 
 training_location = 'training/'
