@@ -104,6 +104,8 @@ for i in range(initial_exploration_steps):
 # Run the main training loop
 episode_steps = 0
 episode_reward = 0
+record_csv = open('peg_insertion.csv', 'w')
+record_csv.write('Episode num, Episode reward, Episode length\n')
 # num_episodes = 0
 obs = env.reset()
 for i in range(initial_exploration_steps, steps_to_train):
@@ -121,14 +123,16 @@ for i in range(initial_exploration_steps, steps_to_train):
     memory.push(obs, action, reward, next_state, mask) # Append transition to memory
     obs = next_state
     if(done):
-        episode_steps = 0
         obs = env.reset()
-        num_episodes += 1
         print("Episode {} finished with reward {}".format(num_episodes, episode_reward))
         sw.add_scalar("Episode Reward", episode_reward, i)
+        record_csv.write(str(num_episodes) + ',' + str(episode_reward) + ',' + str(episode_steps) + '\n')
+        num_episodes += 1
+        episode_steps = 0
         episode_reward = 0
     
     if(total_steps % snapshot_every == 0):
         agent.save_checkpoint(str(snapshot_dir / "model_{}.data".format(total_steps)))
         print("Saved model at step {}".format(total_steps))
 agent.save_checkpoint(str(snapshot_dir / "model_final.data"))
+record_csv.close()

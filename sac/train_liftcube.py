@@ -94,7 +94,7 @@ for i in range(initial_exploration_steps):
     mask = 1 if episode_steps == max_env_steps else float(not done)
     memory.push(obs, action, reward, next_obs, mask)
     obs = next_obs
-    if(done):
+    if(episode_steps == max_env_steps):
         num_episodes += 1
         episode_steps = 0
         obs = env.reset()
@@ -103,6 +103,8 @@ for i in range(initial_exploration_steps):
 # Run the main training loop
 episode_steps = 0
 episode_reward = 0
+record_csv = open('liftcube.csv', 'w')
+record_csv.write('Episode number, Episode reward\n')  # Episode length is always 200
 # num_episodes = 0
 obs = env.reset()
 for i in range(initial_exploration_steps, steps_to_train):
@@ -119,15 +121,17 @@ for i in range(initial_exploration_steps, steps_to_train):
     mask = 1 if episode_steps == max_env_steps else float(not done)
     memory.push(obs, action, reward, next_state, mask) # Append transition to memory
     obs = next_state
-    if(done):
+    if(episode_steps == max_env_steps):
         episode_steps = 0
         obs = env.reset()
-        num_episodes += 1
         print("Episode {} finished with reward {}".format(num_episodes, episode_reward))
         sw.add_scalar("Episode Reward", episode_reward, i)
+        record_csv.write(str(num_episodes) + ',' + str(episode_reward) + '\n')
+        num_episodes += 1
         episode_reward = 0
     
     if(total_steps % snapshot_every == 0):
         agent.save_checkpoint(str(snapshot_dir / "model_{}.data".format(total_steps)))
         print("Saved model at step {}".format(total_steps))
 agent.save_checkpoint(str(snapshot_dir / "model_final.data"))
+record_csv.close()

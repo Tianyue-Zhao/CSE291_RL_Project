@@ -17,6 +17,7 @@ from dmc import ExtendedTimeStep
 from pathlib import Path
 from collections import deque
 from torch.utils.tensorboard import SummaryWriter
+import sys
 
 def log_metrics(metrics, steps):
     for (key, value) in metrics.items():
@@ -31,17 +32,24 @@ def set_seed_everywhere(seed):
     np.random.seed(seed)
     random.seed(seed)
 
+# take a input from the command line
+seed = sys.argv[1]
+print("Training seed: {}".format(seed))
+seed = int(seed)
+set_seed_everywhere(seed)
+task = "liftcube"
+
 env_id = "LiftCube-v1"
 obs_mode = "rgbd"
 control_mode = "pd_ee_delta_pos"
 reward_mode = "dense"
 max_env_steps = 200
 
-num_train_frames = 1000000
+num_train_frames = 300000
 replay_buffer_frames = 500000
-snapshot_every = num_train_frames // 20
-num_expl_steps = 5000
-training_seed = 32191
+snapshot_every = 20000
+num_expl_steps = 1000
+# training_seed = 32191
 load_from = ""
 
 training_location = 'training/'
@@ -49,15 +57,17 @@ video_location = 'videos/'
 replay_location = 'replays/'
 snapshot_location = 'snapshots/'
 metric_location = 'metrics/'
+single_run_location = task + '/' + str(seed) + '/'
 
 # Get a string of the current time
-current_time = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
-set_seed_everywhere(training_seed)
+# current_time = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+# set_seed_everywhere(training_seed)
 faulthandler.enable()
 
 directory = Path.cwd()
 directory = directory / training_location
-directory = directory / current_time
+directory = directory / single_run_location
+# directory = directory / current_time
 directory.mkdir(parents=True, exist_ok=True)
 video_dir = directory / video_location
 replay_dir = directory / replay_location
@@ -81,7 +91,7 @@ training_info = {
     'snapshot_every': snapshot_every,
     'num_expl_steps': num_expl_steps,
     'load_from': load_from,
-    'training_seed': training_seed
+    'training_seed': seed
 }
 info_file = str(directory / 'training_info.json')
 with open(info_file, 'w') as outfile:
@@ -141,6 +151,9 @@ ep_length = 0
 reward_history = []
 ep_reward = 0
 ep_num = 0
+csv_location = str(directory / 'reward_and_length.csv')
+record_csv = open(csv_location, 'w')
+record_csv.write('Episode num, Episode reward\n')
 
 # total_steps = 0
 # if(not load_from == ''):
@@ -156,6 +169,7 @@ for i in range(num_train_frames):
         sw.add_scalar('reward', ep_reward, ep_num)
         reward_history.append(ep_reward)
         length_history.append(ep_length)
+        record_csv.write(str(ep_num) + ',' + str(ep_reward) + '\n')
         ep_length = 0
         ep_reward = 0
         obs = env.reset()['image']['base_camera']['rgb'].transpose((2, 0, 1))
@@ -206,3 +220,4 @@ for i in range(num_train_frames):
     if(i % snapshot_every == 0):
         agent.save(str(snapshot_dir / ('snapshot_' + str(i + prev_steps) + '.data')))
 agent.save(str(snapshot_dir / ('snapshot_' + str(i) + '.data')))
+record_csv.close()
