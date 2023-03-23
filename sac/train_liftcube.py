@@ -52,7 +52,7 @@ metric_location = 'metrics/'
 single_run_location = task + '/' + str(seed) + '/'
 
 # Training parameters
-steps_to_train = 300000
+steps_to_train = 200000
 initial_exploration_steps = 10000 # Steps to randomly sample actions
 lr = 0.0003
 alpha = 0.2
@@ -65,6 +65,8 @@ load_from = ""
 directory = Path.cwd()
 directory = directory / training_location
 directory = directory / single_run_location
+directory.mkdir(parents=True, exist_ok=True)
+
 video_dir = directory / video_location
 snapshot_dir = directory / snapshot_location
 metric_dir = directory / metric_location
@@ -158,7 +160,11 @@ for i in range(initial_exploration_steps, steps_to_train):
         record_csv.write(str(num_episodes) + ',' + str(episode_reward) + '\n')
         num_episodes += 1
         episode_reward = 0
-    
+
+    if (metrics is not None and sw is not None):
+        log_metrics(metrics, i)
+        metrics = None
+
     if(total_steps % snapshot_every == 0):
         agent.save_checkpoint(str(snapshot_dir / "model_{}.data".format(total_steps)))
         print("Saved model at step {}".format(total_steps))

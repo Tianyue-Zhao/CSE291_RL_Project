@@ -45,7 +45,7 @@ control_mode = "pd_ee_delta_pos"
 reward_mode = "dense"
 max_env_steps = 200
 
-num_train_frames = 300000
+num_train_frames = 200000
 replay_buffer_frames = 500000
 snapshot_every = 20000
 num_expl_steps = 10000
