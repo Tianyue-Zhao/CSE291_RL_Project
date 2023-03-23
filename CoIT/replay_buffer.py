@@ -1,3 +1,9 @@
+# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
+# Modified from https://github.com/facebookresearch/drqv2
 import datetime
 import io
 import random
@@ -76,7 +82,7 @@ class ReplayBufferStorage:
 
 class ReplayBuffer(IterableDataset):
     def __init__(self, replay_dir, max_size, num_workers, nstep, discount,
-                 fetch_every, save_snapshot):
+                 stack_frames, fetch_every, save_snapshot):
         self._replay_dir = replay_dir
         self._size = 0
         self._max_size = max_size
@@ -85,6 +91,7 @@ class ReplayBuffer(IterableDataset):
         self._episodes = dict()
         self._nstep = nstep
         self._discount = discount
+        self._stack_frames = stack_frames
         self._fetch_every = fetch_every
         self._samples_since_last_fetch = fetch_every
         self._save_snapshot = save_snapshot
@@ -135,6 +142,12 @@ class ReplayBuffer(IterableDataset):
             if not self._store_episode(eps_fn):
                 break
 
+    # Return a list of indices of the 3 previous frames
+    def step_indices(self, current_index):
+        indices = [current_index - self._stack_frames + i for i in range(1, self._stack_frames + 1)]
+        indices = [max(index, 0) for index in indices]
+        return indices
+
     def _sample(self):
         try:
             self._try_fetch()
@@ -144,9 +157,9 @@ class ReplayBuffer(IterableDataset):
         episode = self._sample_episode()
         # add +1 for the first dummy transition
         idx = np.random.randint(0, episode_len(episode) - self._nstep + 1) + 1
-        obs = episode['observation'][idx - 1]
+        obs = np.concatenate([episode['observation'][index] for index in self.step_indices(idx - 1)], axis = 0)
         action = episode['action'][idx]
-        next_obs = episode['observation'][idx + self._nstep - 1]
+        next_obs = np.concatenate([episode['observation'][index] for index in self.step_indices(idx + self._nstep - 1)], axis = 0)
         reward = np.zeros_like(episode['reward'][idx])
         discount = np.ones_like(episode['discount'][idx])
         for i in range(self._nstep):
@@ -167,7 +180,7 @@ def _worker_init_fn(worker_id):
 
 
 def make_replay_loader(replay_dir, max_size, batch_size, num_workers,
-                       save_snapshot, nstep, discount):
+                       save_snapshot, nstep, discount, stack_frames):
     max_size_per_worker = max_size // max(1, num_workers)
 
     iterable = ReplayBuffer(replay_dir,
@@ -175,6 +188,7 @@ def make_replay_loader(replay_dir, max_size, batch_size, num_workers,
                             num_workers,
                             nstep,
                             discount,
+                            stack_frames,
                             fetch_every=1000,
                             save_snapshot=save_snapshot)
 

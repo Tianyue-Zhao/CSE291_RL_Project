@@ -11,7 +11,7 @@ from mani_skill2.utils.wrappers import RecordEpisode
 from dm_env import specs
 from dm_env import StepType
 from replay_buffer import ReplayBufferStorage, make_replay_loader
-from drqv2 import DrQV2Agent
+from coit import Agent
 from utils import eval_mode
 from dmc import ExtendedTimeStep
 from pathlib import Path
@@ -45,10 +45,10 @@ control_mode = "pd_ee_delta_pos"
 reward_mode = "dense"
 max_env_steps = 200
 
-num_train_frames = 200000
+num_train_frames = 10000
 replay_buffer_frames = 500000
 snapshot_every = 20000
-num_expl_steps = 10000
+num_expl_steps = 2000
 load_from = ""
 
 training_location = 'training/'
@@ -110,8 +110,9 @@ obs_stack.append(obs)
 obs_stack.append(obs)
 
 # Agent configuration variables
-stddev_schedule = 'linear(1.0,0.1,10000)'
+stddev_schedule = 'linear(1.0,0.1,100000)'
 learning_rate = 1e-4
+augmented_learning_rating = 2e-6
 obs_shape = (9,128,128)
 stack_frames = 3 # Stack the 3 most recent frames
 assert(obs_shape[0] % stack_frames == 0)
@@ -123,6 +124,9 @@ hidden_dim = 1024
 critic_target_tau = 0.01
 update_every_steps = 2
 stddev_clip = 0.3
+encoder_target_tau= 0.0001
+alpha= 0.0
+lam= 0.0
 use_tb = True
 metrics = None
 
@@ -136,9 +140,11 @@ replay_loader = make_replay_loader(
      3, 0.99, stack_frames
 )
 
-agent = DrQV2Agent(obs_shape, action_shape, 'cuda', learning_rate,
-    feature_dim, hidden_dim, critic_target_tau, num_expl_steps,
-    update_every_steps, stddev_schedule, stddev_clip, use_tb)
+agent = Agent(obs_shape, action_shape, 'cuda', learning_rate,
+              augmented_learning_rating, feature_dim, hidden_dim, 
+              critic_target_tau, num_expl_steps, update_every_steps, 
+              stddev_schedule, stddev_clip, use_tb, 
+              encoder_target_tau, alpha, lam)
 prev_steps = 0  # An indication of how many steps the agent has already been trained for
 
 if(not load_from == ''):
