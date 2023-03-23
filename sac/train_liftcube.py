@@ -1,5 +1,9 @@
 import gym
+import sys
+import torch
 import numpy as np
+import pickle
+import random
 import mani_skill2.envs
 import matplotlib.pyplot as plt
 from mani_skill2.utils.wrappers import RecordEpisode
@@ -12,6 +16,26 @@ from torch.utils.tensorboard import SummaryWriter
 # with state observation and dense rewards
 # Uses SAC from existing repository on Github
 
+def log_metrics(metrics, steps):
+    for (key, value) in metrics.items():
+        sw.add_scalar(key, value, steps)
+    with open(str(metric_dir) + '/metric_' + str(steps) + '.dict', 'wb') as output_file:
+        pickle.dump(metrics, output_file)
+
+def set_seed_everywhere(seed):
+    torch.manual_seed(seed)
+    if(torch.cuda.is_available()):
+        torch.cuda.manual_seed_all(seed)
+    np.random.seed(seed)
+    random.seed(seed)
+
+# take a input from the command line
+seed = sys.argv[1]
+print("Training seed: {}".format(seed))
+seed = int(seed)
+set_seed_everywhere(seed)
+task = "liftcube"
+
 # Environment Control
 env_id = "LiftCube-v1"
 obs_mode = "state"
@@ -20,23 +44,27 @@ reward_mode = "dense"
 max_env_steps = 200
 
 # File parameters
+training_location = 'training/'
 video_location = 'videos/'
+replay_location = 'replays/'
 snapshot_location = 'snapshots/'
 metric_location = 'metrics/'
+single_run_location = task + '/' + str(seed) + '/'
 
 # Training parameters
-steps_to_train = 50000
+steps_to_train = 300000
 initial_exploration_steps = 10000 # Steps to randomly sample actions
 lr = 0.0003
 alpha = 0.2
 batch_size = 256
-seed = 21283489
-replay_size = 2000000
+replay_size = 5000000
 snapshot_every = 20000
 load_from = ""
 
 # Create paths
 directory = Path.cwd()
+directory = directory / training_location
+directory = directory / single_run_location
 video_dir = directory / video_location
 snapshot_dir = directory / snapshot_location
 metric_dir = directory / metric_location
@@ -103,7 +131,8 @@ for i in range(initial_exploration_steps):
 # Run the main training loop
 episode_steps = 0
 episode_reward = 0
-record_csv = open('liftcube.csv', 'w')
+csv_location = str(directory / 'reward_and_length.csv')
+record_csv = open(csv_location, 'w')
 record_csv.write('Episode number, Episode reward\n')  # Episode length is always 200
 # num_episodes = 0
 obs = env.reset()

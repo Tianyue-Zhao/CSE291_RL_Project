@@ -48,8 +48,7 @@ max_env_steps = 200
 num_train_frames = 300000
 replay_buffer_frames = 500000
 snapshot_every = 20000
-num_expl_steps = 1000
-# training_seed = 32191
+num_expl_steps = 10000
 load_from = ""
 
 training_location = 'training/'
@@ -61,7 +60,7 @@ single_run_location = task + '/' + str(seed) + '/'
 
 # Get a string of the current time
 # current_time = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
-# set_seed_everywhere(training_seed)
+
 faulthandler.enable()
 
 directory = Path.cwd()
