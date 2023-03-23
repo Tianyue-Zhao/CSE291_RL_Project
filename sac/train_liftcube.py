@@ -57,7 +57,7 @@ initial_exploration_steps = 10000 # Steps to randomly sample actions
 lr = 0.0003
 alpha = 0.2
 batch_size = 256
-replay_size = 5000000
+replay_size = 500000
 snapshot_every = 20000
 load_from = ""
 

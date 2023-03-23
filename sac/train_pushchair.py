@@ -1,6 +1,9 @@
 import gym
+import sys
+import torch
 import numpy as np
-import os
+import pickle
+import random
 import mani_skill2.envs
 import matplotlib.pyplot as plt
 from mani_skill2.utils.wrappers import RecordEpisode
@@ -13,6 +16,30 @@ from torch.utils.tensorboard import SummaryWriter
 # with state observation and dense rewards
 # Uses SAC from existing repository on Github
 
+
+def log_metrics(metrics, steps):
+    for (key, value) in metrics.items():
+        sw.add_scalar(key, value, steps)
+    with open(str(metric_dir) + '/metric_' + str(steps) + '.dict', 'wb') as output_file:
+        pickle.dump(metrics, output_file)
+
+
+def set_seed_everywhere(seed):
+    torch.manual_seed(seed)
+    if (torch.cuda.is_available()):
+        torch.cuda.manual_seed_all(seed)
+    np.random.seed(seed)
+    random.seed(seed)
+
+
+# take a input from the command line
+seed = sys.argv[1]
+print("Training seed: {}".format(seed))
+seed = int(seed)
+set_seed_everywhere(seed)
+task = "pushchair-v1"
+# task = "pushchair-v2"
+
 # Environment Control
 env_id = "PushChair-v1"
 # env_id = "PushChair-v2"
@@ -22,9 +49,12 @@ reward_mode = "dense"
 max_env_steps = 200
 
 # File parameters
+training_location = 'training/'
 video_location = 'videos/'
+replay_location = 'replays/'
 snapshot_location = 'snapshots/'
 metric_location = 'metrics/'
+single_run_location = task + '/' + str(seed) + '/'
 
 # Training parameters
 steps_to_train = 500000
@@ -32,13 +62,16 @@ initial_exploration_steps = 10000 # Steps to randomly sample actions
 lr = 0.0003
 alpha = 0.2
 batch_size = 256
-seed = 21283489
 replay_size = 2000000
 snapshot_every = 20000
 load_from = ""
 
 # Create paths
 directory = Path.cwd()
+directory = directory / training_location
+directory = directory / single_run_location
+directory.mkdir(parents=True, exist_ok=True)
+
 video_dir = directory / video_location
 snapshot_dir = directory / snapshot_location
 metric_dir = directory / metric_location
@@ -105,31 +138,44 @@ for i in range(initial_exploration_steps):
 # Run the main training loop
 episode_steps = 0
 episode_reward = 0
+csv_location = str(directory / 'reward_and_length.csv')
+record_csv = open(csv_location, 'w')
+# Episode length is always 200
+record_csv.write('Episode number, Episode reward\n')
 # num_episodes = 0
 obs = env.reset()
 for i in range(initial_exploration_steps, steps_to_train):
     total_steps += 1
     action = agent.select_action(obs)
-    metrics = agent.update_parameters(memory, batch_size, total_steps) 
+    metrics = agent.update_parameters(memory, batch_size, total_steps)
     for (key, value) in metrics.items():
         sw.add_scalar(key, value, total_steps)
 
-    next_state, reward, done, _ = env.step(action) # Step
+    next_state, reward, done, _ = env.step(action)  # Step
     sw.add_scalar("Reward", reward, total_steps)
     episode_steps += 1
     episode_reward += reward
     mask = 1 if episode_steps == max_env_steps else float(not done)
-    memory.push(obs, action, reward, next_state, mask) # Append transition to memory
+    # Append transition to memory
+    memory.push(obs, action, reward, next_state, mask)
     obs = next_state
-    if(done):
+    if (episode_steps == max_env_steps):
         episode_steps = 0
         obs = env.reset()
-        num_episodes += 1
-        print("Episode {} finished with reward {}".format(num_episodes, episode_reward))
+        print("Episode {} finished with reward {}".format(
+            num_episodes, episode_reward))
         sw.add_scalar("Episode Reward", episode_reward, i)
+        record_csv.write(str(num_episodes) + ',' + str(episode_reward) + '\n')
+        num_episodes += 1
         episode_reward = 0
-    
-    if(total_steps % snapshot_every == 0):
-        agent.save_checkpoint(str(snapshot_dir / "model_{}.data".format(total_steps)))
+
+    if (metrics is not None and sw is not None):
+        log_metrics(metrics, i)
+        metrics = None
+
+    if (total_steps % snapshot_every == 0):
+        agent.save_checkpoint(
+            str(snapshot_dir / "model_{}.data".format(total_steps)))
         print("Saved model at step {}".format(total_steps))
 agent.save_checkpoint(str(snapshot_dir / "model_final.data"))
+record_csv.close()
