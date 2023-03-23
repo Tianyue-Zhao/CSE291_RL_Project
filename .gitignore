@@ -3,6 +3,6 @@
 **/__pycache__/
 **/snapshots/
 **/replays/
-**/training/
-*.csv
 **/data/
+*.pickle
+*.json
