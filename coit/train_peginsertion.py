@@ -37,16 +37,16 @@ seed = sys.argv[1]
 print("Training seed: {}".format(seed))
 seed = int(seed)
 set_seed_everywhere(seed)
-task = "liftcube"
+task = "peginsertion"
 
-env_id = "LiftCube-v1"
+env_id = "PegInsertionSide-v1"
 obs_mode = "rgbd"
 control_mode = "pd_ee_delta_pos"
 reward_mode = "dense"
 max_env_steps = 200
 
-num_train_frames = 200000
-replay_buffer_frames = 500000
+num_train_frames = 500000
+replay_buffer_frames = 2000000
 snapshot_every = 20000
 num_expl_steps = 10000
 load_from = ""

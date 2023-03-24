@@ -1,3 +1,5 @@
+# Modified from https://github.com/mooricAnna/CoIT
+
 import hydra
 import numpy as np
 import torch
@@ -106,7 +108,8 @@ class Encoder(nn.Module):
         super().__init__()
 
         assert len(obs_shape) == 3
-        self.repr_dim = 32 * 35 * 35
+        # self.repr_dim = 32 * 35 * 35
+        self.repr_dim = 32 * 57 * 57
         
         self.convnet1 = nn.Sequential(nn.Conv2d(obs_shape[0], 32, 3, stride=2), 
                                      nn.BatchNorm2d(32), nn.ReLU()) 
@@ -333,6 +336,17 @@ class Agent:
         self.critic.train(training)
         self.mlp.train(training)
 
+    def save(self, filename):
+        save_dict = {}
+        save_dict['encoder'] = self.encoder.state_dict()
+        save_dict['actor'] = self.actor.state_dict()
+        save_dict['critic'] = self.critic.state_dict()
+        save_dict['critic_target'] = self.critic_target.state_dict()
+        save_dict['encoder_opt'] = self.encoder_opt.state_dict()
+        save_dict['actor_opt'] = self.actor_opt.state_dict()
+        save_dict['critic_opt'] = self.critic_opt.state_dict()
+        torch.save(save_dict, filename)
+        
     def act(self, obs, step, eval_mode):
         obs = torch.as_tensor(obs, device=self.device)
         obs = self.aug(obs.unsqueeze(0).float(), 
