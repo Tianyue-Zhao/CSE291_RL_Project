@@ -11,7 +11,7 @@ from mani_skill2.utils.wrappers import RecordEpisode
 from dm_env import specs
 from dm_env import StepType
 from replay_buffer import ReplayBufferStorage, make_replay_loader
-from coit import Agent
+from coit_chair import Agent
 from utils import eval_mode
 from dmc import ExtendedTimeStep
 from pathlib import Path
@@ -120,7 +120,7 @@ stack_frames = 3 # Stack the 3 most recent frames
 assert(obs_shape[0] % stack_frames == 0)
 replay_shape = (obs_shape[0] // stack_frames,
                 obs_shape[1], obs_shape[2])
-action_shape = (4,)
+action_shape = (20,)
 feature_dim = 50
 hidden_dim = 256 # Chose a relative small hidden size for small environment
 critic_target_tau = 0.01

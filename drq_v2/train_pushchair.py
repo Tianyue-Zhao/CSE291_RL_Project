@@ -11,7 +11,7 @@ from mani_skill2.utils.wrappers import RecordEpisode
 from dm_env import specs
 from dm_env import StepType
 from replay_buffer import ReplayBufferStorage, make_replay_loader
-from drqv2 import DrQV2Agent
+from drqv2_chair import DrQV2Agent
 from utils import eval_mode
 from dmc import ExtendedTimeStep
 from pathlib import Path
@@ -105,7 +105,15 @@ env = RecordEpisode(
     render_mode = 'cameras',
     info_on_video = True
 )
-obs = env.reset()['image']['base_camera']['rgb'].transpose((2, 0, 1))
+
+base_image = env.reset()['image']
+#concatenate the three cameras
+obs = np.concatenate((base_image['overhead_camera_0']['rgb'],
+                      base_image['overhead_camera_1']['rgb'],
+                      base_image['overhead_camera_2']['rgb']), axis=2)
+obs = obs.transpose((2, 0, 1))
+# print(obs.shape)
+
 obs_stack = deque(maxlen=3)
 obs_stack.append(obs)
 obs_stack.append(obs)
@@ -114,12 +122,12 @@ obs_stack.append(obs)
 # Agent configuration variables
 stddev_schedule = 'linear(1.0,0.1,10000)'
 learning_rate = 1e-4
-obs_shape = (9,128,128)
+obs_shape = (27,160,400)
 stack_frames = 3 # Stack the 3 most recent frames
 assert(obs_shape[0] % stack_frames == 0)
 replay_shape = (obs_shape[0] // stack_frames,
                 obs_shape[1], obs_shape[2])
-action_shape = (4,)
+action_shape = (20,)
 feature_dim = 50
 hidden_dim = 1024
 critic_target_tau = 0.01
@@ -173,7 +181,15 @@ for i in range(num_train_frames):
         record_csv.write(str(ep_num) + ',' + str(ep_reward) + '\n')
         ep_length = 0
         ep_reward = 0
-        obs = env.reset()['image']['base_camera']['rgb'].transpose((2, 0, 1))
+
+        base_image = env.reset()['image']
+        # concatenate the three cameras
+        obs = np.concatenate((base_image['overhead_camera_0']['rgb'],
+                            base_image['overhead_camera_1']['rgb'],
+                            base_image['overhead_camera_2']['rgb']), axis=2)
+        obs = obs.transpose((2, 0, 1))
+        # print(obs.shape)
+
         obs_stack.append(obs)
         obs_stack.append(obs)
         obs_stack.append(obs)
@@ -202,7 +218,14 @@ for i in range(num_train_frames):
         log_metrics(metrics, i)
         metrics = None
     obs, reward, done, info = env.step(action)
-    obs = obs['image']['base_camera']['rgb'].transpose((2, 0, 1))
+
+    base_image = obs['image']
+    # concatenate the three cameras
+    obs = np.concatenate((base_image['overhead_camera_0']['rgb'],
+                        base_image['overhead_camera_1']['rgb'],
+                        base_image['overhead_camera_2']['rgb']), axis=2)
+    obs = obs.transpose((2, 0, 1))
+
     obs_stack.append(obs)
     ep_reward += reward
     ep_length += 1
