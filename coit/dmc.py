@@ -1,3 +1,5 @@
+# Modified from https://github.com/mooricAnna/CoIT
+
 from collections import deque
 from typing import Any, NamedTuple
 

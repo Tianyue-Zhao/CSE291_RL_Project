@@ -11,7 +11,7 @@ from mani_skill2.utils.wrappers import RecordEpisode
 from dm_env import specs
 from dm_env import StepType
 from replay_buffer import ReplayBufferStorage, make_replay_loader
-from coit import Agent
+from coit_chair import Agent
 from utils import eval_mode
 from dmc import ExtendedTimeStep
 from pathlib import Path
@@ -37,16 +37,18 @@ seed = sys.argv[1]
 print("Training seed: {}".format(seed))
 seed = int(seed)
 set_seed_everywhere(seed)
-task = "liftcube"
+task = "pushchair-v1"
+# task = "pushchair-v2"
 
-env_id = "LiftCube-v1"
+env_id = "PushChair-v1"
+# env_id = "PushChair-v2"
 obs_mode = "rgbd"
-control_mode = "pd_ee_delta_pos"
+control_mode = "base_pd_joint_vel_arm_pd_joint_vel"
 reward_mode = "dense"
 max_env_steps = 200
 
-num_train_frames = 200000
-replay_buffer_frames = 500000
+num_train_frames = 500000
+replay_buffer_frames = 2000000
 snapshot_every = 20000
 num_expl_steps = 10000
 load_from = ""
@@ -118,7 +120,7 @@ stack_frames = 3 # Stack the 3 most recent frames
 assert(obs_shape[0] % stack_frames == 0)
 replay_shape = (obs_shape[0] // stack_frames,
                 obs_shape[1], obs_shape[2])
-action_shape = (4,)
+action_shape = (20,)
 feature_dim = 50
 hidden_dim = 256 # Chose a relative small hidden size for small environment
 critic_target_tau = 0.01
