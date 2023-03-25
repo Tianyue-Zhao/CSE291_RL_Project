@@ -121,7 +121,7 @@ replay_shape = (obs_shape[0] // stack_frames,
                 obs_shape[1], obs_shape[2])
 action_shape = (4,)
 feature_dim = 50
-hidden_dim = 1024
+hidden_dim = 256
 critic_target_tau = 0.01
 update_every_steps = 2
 stddev_clip = 0.3
